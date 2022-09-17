@@ -18,37 +18,53 @@ const (
 	screenWidth  = 400
 	screenHeight = 400
 
-	paddleWidth    = 80
-	paddleHeight   = 10
-	paddleY        = screenHeight - (paddleHeight + 2)
+	paddleWidth  = 80
+	paddleHeight = 10
+	paddleY      = screenHeight - (paddleHeight + 2)
+	paddleX      = (screenWidth - paddleWidth) / 2
+
 	paddleAccel    = 0.5
 	paddleDecel    = 1
 	paddleMaxSpeed = 20
 
 	ballWidth  = 10
 	ballHeight = 10
+	ballX      = (screenWidth - ballWidth) / 2
+	ballY      = 0
 )
 
 var (
-	paddleImg   *ebiten.Image
-	paddleX     float64 = (screenWidth - paddleWidth) / 2
-	paddleSpeed float64 = 0
-
-	ballImg *ebiten.Image
-	ballX   float64 = (screenWidth - ballWidth) / 2
-	ballY   float64 = 0
+	start = true
 
 	errQuit = errorQuit{}
 
-	background = engine.NewImageSpriteFill(0, 0, screenWidth, screenHeight,
-		color.RGBA{0xFF, 0xFF, 0xFF, 0xFF})
+	background = engine.NewImageSprite(0, 0,
+		engine.NewImageFill(screenWidth, screenHeight, color.RGBA{0xFF, 0xFF, 0xFF, 0xFF}))
 	paddle = PaddleSprite{
-		ImageSprite: engine.NewImageSpriteFill(paddleX, paddleY, paddleWidth, paddleHeight,
-			color.RGBA{0, 0xFF, 0, 0xFF}),
+		ImageSprite: engine.NewImageSprite(paddleX, paddleY,
+			engine.NewImageFill(paddleWidth, paddleHeight, color.RGBA{0, 0xFF, 0, 0xFF})),
 	}
-	ball = BallSprite{
-		ImageSprite: engine.NewImageSpriteFill(0, 0, ballWidth, ballHeight,
-			color.RGBA{0, 0, 0, 0xFF}),
+	ballImg   = engine.NewImageFill(ballWidth, ballHeight, color.RGBA{0, 0, 0, 0xFF})
+	gameLayer = engine.Layer{
+		Sprites: []engine.Sprite{
+			&paddle,
+			&engine.ImageSprite{ // left
+				X: -1, Y: 0,
+				Width: 0, Height: screenHeight,
+			},
+			&engine.ImageSprite{ // right
+				X: screenWidth, Y: 0,
+				Width: 0, Height: screenHeight,
+			},
+			&engine.ImageSprite{ // top
+				X: 0, Y: -1,
+				Width: screenWidth, Height: 0,
+			},
+			&engine.ImageSprite{ // bottom
+				X: 0, Y: screenHeight,
+				Width: screenWidth, Height: 0,
+			},
+		},
 	}
 	level = engine.Level{
 		Layers: []*engine.Layer{
@@ -57,28 +73,7 @@ var (
 					&background,
 				},
 			},
-			&engine.Layer{
-				Sprites: []engine.Sprite{
-					&paddle,
-					&ball,
-					&engine.ImageSprite{ // left
-						X: -1, Y: 0,
-						Width: 0, Height: screenHeight,
-					},
-					&engine.ImageSprite{ // right
-						X: screenWidth, Y: 0,
-						Width: 0, Height: screenHeight,
-					},
-					&engine.ImageSprite{ // top
-						X: 0, Y: -1,
-						Width: screenWidth, Height: 0,
-					},
-					&engine.ImageSprite{ // bottom
-						X: 0, Y: screenHeight,
-						Width: screenWidth, Height: 0,
-					},
-				},
-			},
+			&gameLayer,
 		},
 	}
 )
@@ -88,17 +83,47 @@ type PaddleSprite struct {
 }
 
 func (sprt *PaddleSprite) Update() bool {
-	// Always update to check for collisions.
+	if start && ebiten.IsKeyPressed(ebiten.KeySpace) {
+		start = false
+
+		ball := BallSprite{
+			ImageSprite: engine.NewImageSprite(0, 0, ballImg),
+		}
+		ball.speed = 4
+		ball.X = sprt.X + (paddleWidth-ballWidth)/2
+		ball.Y = sprt.Y - ballHeight
+		ball.setDXDY((rand.Float64() * ball.speed / 2) - ball.speed)
+
+		gameLayer.Sprites = append(gameLayer.Sprites, &ball)
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
+		sprt.DX -= paddleAccel
+		if -sprt.DX > paddleMaxSpeed {
+			sprt.DX = -paddleMaxSpeed
+		}
+	} else if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
+		sprt.DX += paddleAccel
+		if sprt.DX > paddleMaxSpeed {
+			sprt.DX = paddleMaxSpeed
+		}
+	} else if sprt.DX > paddleDecel {
+		sprt.DX -= paddleDecel
+	} else if sprt.DX < -paddleDecel {
+		sprt.DX += paddleDecel
+	} else {
+		sprt.DX = 0
+	}
+
 	sprt.X += sprt.DX
 	sprt.Y += sprt.DY
-	return true
+	return true // Always update to check for collisions.
 }
 
 func (sprt *PaddleSprite) Collision(with engine.Sprite) {
 	if ball, ok := with.(*BallSprite); ok {
 		if ball.DY > 0 {
-			ball.setDXDY(ball.DX + paddle.DX)
-			ball.DY = -ball.DY
+			ball.setDXDY(ball.DX + sprt.DX)
 		}
 	} else if sprt.X < 0 {
 		sprt.X = 0
@@ -109,16 +134,19 @@ func (sprt *PaddleSprite) Collision(with engine.Sprite) {
 	}
 }
 
+func (sprt *PaddleSprite) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
+	op.GeoM.Translate(sprt.X, sprt.Y)
+	screen.DrawImage(sprt.Image, op)
+
+	if start {
+		op.GeoM.Translate((paddleWidth-ballWidth)/2, -ballHeight)
+		screen.DrawImage(ballImg, op)
+	}
+}
+
 type BallSprite struct {
 	engine.ImageSprite
 	speed float64
-}
-
-func (sprt *BallSprite) init() {
-	sprt.speed = 4
-	sprt.X = ballX
-	sprt.Y = ballY
-	sprt.setDXDY((rand.Float64() * sprt.speed / 2) - sprt.speed)
 }
 
 func (sprt *BallSprite) setDXDY(dx float64) {
@@ -135,7 +163,7 @@ func (sprt *BallSprite) setDXDY(dx float64) {
 		}
 	}
 	sprt.DX = dx
-	sprt.DY = dy
+	sprt.DY = -dy
 }
 
 func (sprt *BallSprite) Collision(with engine.Sprite) {
@@ -149,7 +177,8 @@ func (sprt *BallSprite) Collision(with engine.Sprite) {
 		sprt.X = screenWidth - sprt.Width
 		sprt.DX = -sprt.DX
 	} else if sprt.Y+sprt.Height > screenHeight {
-		sprt.init()
+		start = true
+		sprt.Delete()
 	}
 }
 
@@ -166,24 +195,6 @@ func (bo *breakout) Update() error {
 		return errQuit
 	}
 
-	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
-		paddle.DX -= paddleAccel
-		if -paddle.DX > paddleMaxSpeed {
-			paddle.DX = -paddleMaxSpeed
-		}
-	} else if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
-		paddle.DX += paddleAccel
-		if paddle.DX > paddleMaxSpeed {
-			paddle.DX = paddleMaxSpeed
-		}
-	} else if paddle.DX > paddleDecel {
-		paddle.DX -= paddleDecel
-	} else if paddle.DX < -paddleDecel {
-		paddle.DX += paddleDecel
-	} else {
-		paddle.DX = 0
-	}
-
 	level.Update()
 	return nil
 }
@@ -197,10 +208,10 @@ func (bo *breakout) Layout(w, h int) (int, int) {
 }
 
 func main() {
-	ball.init()
 	ebiten.SetWindowSize(windowWidth, windowHeight)
 	ebiten.SetWindowTitle("Breakout")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
 	err := ebiten.RunGame(&breakout{})
 	if err != nil && !errors.Is(err, errQuit) {
 		fmt.Fprintf(os.Stderr, "breakout failed: %s\n", err)

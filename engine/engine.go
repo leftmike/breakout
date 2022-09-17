@@ -22,6 +22,7 @@ type Sprite interface {
 	Collision(with Sprite)
 	Corners() (float64, float64, float64, float64)
 	Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions)
+	Deleted() bool
 }
 
 func (lvl *Level) Update() {
@@ -44,16 +45,28 @@ func (lyr *Layer) update() {
 	}
 
 	for _, sprt := range lyr.Sprites {
+		if sprt.Deleted() {
+			continue
+		}
+
 		if sprt.Update() {
 			lyr.updated = append(lyr.updated, sprt)
 		}
 	}
 
 	for _, sprt := range lyr.updated {
+		if sprt.Deleted() {
+			continue
+		}
+
 		if sprt.Visible() {
 			sprtMinX, sprtMinY, sprtMaxX, sprtMaxY := sprt.Corners()
 			for _, with := range lyr.Sprites {
-				if with != sprt && with.Visible() {
+				if with == sprt || with.Deleted() {
+					continue
+				}
+
+				if with.Visible() {
 					withMinX, withMinY, withMaxX, withMaxY := with.Corners()
 					if sprtMinX < withMaxX && withMinX < sprtMaxX && sprtMinY < withMaxY &&
 						withMinY < sprtMaxY {
@@ -71,7 +84,12 @@ func (lyr *Layer) draw(screen *ebiten.Image) {
 		return
 	}
 
+	// XXX: cleanup deleted sprites
 	for _, sprt := range lyr.Sprites {
+		if sprt.Deleted() {
+			continue
+		}
+
 		var op ebiten.DrawImageOptions
 		sprt.Draw(screen, &op)
 	}
@@ -83,6 +101,7 @@ type ImageSprite struct {
 	DX, DY        float64
 	Width, Height float64
 	Image         *ebiten.Image
+	deleted       bool
 }
 
 func (sprt *ImageSprite) Update() bool {
@@ -116,9 +135,16 @@ func (sprt *ImageSprite) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions)
 	screen.DrawImage(sprt.Image, op)
 }
 
-func NewImageSpriteFill(x, y float64, w, h int, clr color.Color) ImageSprite {
-	img := ebiten.NewImage(w, h)
-	img.Fill(clr)
+func (sprt *ImageSprite) Deleted() bool {
+	return sprt.deleted
+}
+
+func (sprt *ImageSprite) Delete() {
+	sprt.deleted = true
+}
+
+func NewImageSprite(x, y float64, img *ebiten.Image) ImageSprite {
+	w, h := img.Size()
 
 	return ImageSprite{
 		X:      x,
@@ -127,4 +153,11 @@ func NewImageSpriteFill(x, y float64, w, h int, clr color.Color) ImageSprite {
 		Height: float64(h),
 		Image:  img,
 	}
+}
+
+func NewImageFill(w, h int, clr color.Color) *ebiten.Image {
+	img := ebiten.NewImage(w, h)
+	img.Fill(clr)
+
+	return img
 }
