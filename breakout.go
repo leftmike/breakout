@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"math"
 	"math/rand"
 	"os"
 
@@ -17,7 +18,7 @@ const (
 	screenWidth  = 400
 	screenHeight = 400
 
-	paddleWidth    = 60
+	paddleWidth    = 80
 	paddleHeight   = 10
 	paddleY        = screenHeight - (paddleHeight + 2)
 	paddleAccel    = 0.5
@@ -39,68 +40,116 @@ var (
 
 	errQuit = errorQuit{}
 
-	background = engine.Sprite{}
-	paddle     = engine.Sprite{
-		X:         paddleX,
-		Y:         paddleY,
-		Collision: paddleCollision,
+	background = engine.NewImageSpriteFill(0, 0, screenWidth, screenHeight,
+		color.RGBA{0xFF, 0xFF, 0xFF, 0xFF})
+	paddle = PaddleSprite{
+		ImageSprite: engine.NewImageSpriteFill(paddleX, paddleY, paddleWidth, paddleHeight,
+			color.RGBA{0, 0xFF, 0, 0xFF}),
 	}
-	ball = engine.Sprite{
-		Collision: ballCollision,
+	ball = BallSprite{
+		ImageSprite: engine.NewImageSpriteFill(0, 0, ballWidth, ballHeight,
+			color.RGBA{0, 0, 0, 0xFF}),
 	}
 	level = engine.Level{
 		Layers: []*engine.Layer{
 			&engine.Layer{
-				Sprites: []*engine.Sprite{
-					background.NewImageFill(screenWidth, screenHeight,
-						color.RGBA{0xFF, 0xFF, 0xFF, 0xFF}),
+				Sprites: []engine.Sprite{
+					&background,
 				},
 			},
 			&engine.Layer{
-				Sprites: []*engine.Sprite{
-					paddle.NewImageFill(paddleWidth, paddleHeight, color.RGBA{0, 0xFF, 0, 0xFF}),
-					ball.NewImageFill(ballWidth, ballHeight, color.RGBA{0, 0, 0, 0xFF}),
-					&engine.Sprite{X: -1, Y: 0, W: 0, H: screenHeight},          // left
-					&engine.Sprite{X: screenWidth, Y: 0, W: 0, H: screenHeight}, // right
-					&engine.Sprite{X: 0, Y: -1, W: screenWidth, H: 0},           // top
-					&engine.Sprite{X: 0, Y: screenHeight, W: screenWidth, H: 0}, // bottom
+				Sprites: []engine.Sprite{
+					&paddle,
+					&ball,
+					&engine.ImageSprite{ // left
+						X: -1, Y: 0,
+						Width: 0, Height: screenHeight,
+					},
+					&engine.ImageSprite{ // right
+						X: screenWidth, Y: 0,
+						Width: 0, Height: screenHeight,
+					},
+					&engine.ImageSprite{ // top
+						X: 0, Y: -1,
+						Width: screenWidth, Height: 0,
+					},
+					&engine.ImageSprite{ // bottom
+						X: 0, Y: screenHeight,
+						Width: screenWidth, Height: 0,
+					},
 				},
 			},
 		},
 	}
 )
 
-func paddleCollision(sprt, with *engine.Sprite) {
-	if with == &ball {
-		ball.DY = -ball.DY
+type PaddleSprite struct {
+	engine.ImageSprite
+}
+
+func (sprt *PaddleSprite) Update() bool {
+	// Always update to check for collisions.
+	sprt.X += sprt.DX
+	sprt.Y += sprt.DY
+	return true
+}
+
+func (sprt *PaddleSprite) Collision(with engine.Sprite) {
+	if ball, ok := with.(*BallSprite); ok {
+		if ball.DY > 0 {
+			ball.setDXDY(ball.DX + paddle.DX)
+			ball.DY = -ball.DY
+		}
 	} else if sprt.X < 0 {
 		sprt.X = 0
 		sprt.DX = -sprt.DX / 2
-	} else if sprt.X+sprt.W > screenWidth {
-		sprt.X = screenWidth - sprt.W
+	} else if sprt.X+sprt.Width > screenWidth {
+		sprt.X = screenWidth - sprt.Width
 		sprt.DX = -sprt.DX / 2
 	}
 }
 
-func initBall(sprt *engine.Sprite) {
-	sprt.X = ballX
-	sprt.Y = ballY
-	sprt.DX = rand.Float64() * 4
-	sprt.DY = 5 - sprt.DX
+type BallSprite struct {
+	engine.ImageSprite
+	speed float64
 }
 
-func ballCollision(sprt, with *engine.Sprite) {
+func (sprt *BallSprite) init() {
+	sprt.speed = 4
+	sprt.X = ballX
+	sprt.Y = ballY
+	sprt.setDXDY((rand.Float64() * sprt.speed / 2) - sprt.speed)
+}
+
+func (sprt *BallSprite) setDXDY(dx float64) {
+	var dy float64
+	if math.Abs(dx) < sprt.speed {
+		dy = math.Sqrt(sprt.speed*sprt.speed - dx*dx)
+	}
+	if dy < sprt.speed/4 {
+		dy = sprt.speed / 4
+		if dx < 0 {
+			dx = -math.Sqrt(sprt.speed*sprt.speed - dy*dy)
+		} else {
+			dx = math.Sqrt(sprt.speed*sprt.speed - dy*dy)
+		}
+	}
+	sprt.DX = dx
+	sprt.DY = dy
+}
+
+func (sprt *BallSprite) Collision(with engine.Sprite) {
 	if sprt.X < 0 {
 		sprt.X = 0
 		sprt.DX = -sprt.DX
 	} else if sprt.Y < 0 {
 		sprt.Y = 0
 		sprt.DY = -sprt.DY
-	} else if sprt.X+sprt.W > screenWidth {
-		sprt.X = screenWidth - sprt.W
+	} else if sprt.X+sprt.Width > screenWidth {
+		sprt.X = screenWidth - sprt.Width
 		sprt.DX = -sprt.DX
-	} else if sprt.Y+sprt.H > screenHeight {
-		initBall(sprt)
+	} else if sprt.Y+sprt.Height > screenHeight {
+		sprt.init()
 	}
 }
 
@@ -148,10 +197,10 @@ func (bo *breakout) Layout(w, h int) (int, int) {
 }
 
 func main() {
-	initBall(&ball)
+	ball.init()
 	ebiten.SetWindowSize(windowWidth, windowHeight)
 	ebiten.SetWindowTitle("Breakout")
-	//ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	err := ebiten.RunGame(&breakout{})
 	if err != nil && !errors.Is(err, errQuit) {
 		fmt.Fprintf(os.Stderr, "breakout failed: %s\n", err)

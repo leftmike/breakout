@@ -12,16 +12,16 @@ type Level struct {
 
 type Layer struct {
 	Hidden  bool
-	Sprites []*Sprite
+	Sprites []Sprite
+	updated []Sprite
 }
 
-type Sprite struct {
-	Hidden    bool
-	X, Y      float64
-	DX, DY    float64
-	W, H      float64
-	Image     *ebiten.Image
-	Collision func(sprt, with *Sprite)
+type Sprite interface {
+	Update() bool
+	Visible() bool
+	Collision(with Sprite)
+	Corners() (float64, float64, float64, float64)
+	Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions)
 }
 
 func (lvl *Level) Update() {
@@ -32,32 +32,34 @@ func (lvl *Level) Update() {
 
 func (lvl *Level) Draw(screen *ebiten.Image) {
 	for _, lyr := range lvl.Layers {
-		if lyr.Hidden {
-			continue
-		}
-
 		lyr.draw(screen)
 	}
 }
 
 func (lyr *Layer) update() {
-	for _, sprt := range lyr.Sprites {
-		sprt.X += sprt.DX
-		sprt.Y += sprt.DY
+	if lyr.updated == nil {
+		lyr.updated = make([]Sprite, 0, len(lyr.Sprites))
+	} else {
+		lyr.updated = lyr.updated[:0]
 	}
 
 	for _, sprt := range lyr.Sprites {
-		if sprt.Hidden {
-			continue
+		if sprt.Update() {
+			lyr.updated = append(lyr.updated, sprt)
 		}
+	}
 
-		if sprt.Collision != nil {
+	for _, sprt := range lyr.updated {
+		if sprt.Visible() {
+			sprtMinX, sprtMinY, sprtMaxX, sprtMaxY := sprt.Corners()
 			for _, with := range lyr.Sprites {
-				if with == sprt || with.Hidden {
-					continue
-				}
-				if sprt.overlaps(with) {
-					sprt.Collision(sprt, with)
+				if with != sprt && with.Visible() {
+					withMinX, withMinY, withMaxX, withMaxY := with.Corners()
+					if sprtMinX < withMaxX && withMinX < sprtMaxX && sprtMinY < withMaxY &&
+						withMinY < sprtMaxY {
+
+						sprt.Collision(with)
+					}
 				}
 			}
 		}
@@ -65,30 +67,64 @@ func (lyr *Layer) update() {
 }
 
 func (lyr *Layer) draw(screen *ebiten.Image) {
-	for _, sprt := range lyr.Sprites {
-		if sprt.Hidden || sprt.Image == nil {
-			continue
-		}
+	if lyr.Hidden {
+		return
+	}
 
+	for _, sprt := range lyr.Sprites {
 		var op ebiten.DrawImageOptions
-		op.GeoM.Translate(sprt.X, sprt.Y)
-		screen.DrawImage(sprt.Image, &op)
+		sprt.Draw(screen, &op)
 	}
 }
 
-func (sprt *Sprite) NewImageFill(w, h int, clr color.Color) *Sprite {
-	sprt.Image = ebiten.NewImage(w, h)
-	sprt.Image.Fill(clr)
-	sprt.W = float64(w)
-	sprt.H = float64(h)
-	return sprt
+type ImageSprite struct {
+	Hidden        bool
+	X, Y          float64
+	DX, DY        float64
+	Width, Height float64
+	Image         *ebiten.Image
 }
 
-func (sprt *Sprite) overlaps(with *Sprite) bool {
-	sprtMaxX := sprt.X + sprt.W
-	sprtMaxY := sprt.Y + sprt.H
-	withMaxX := with.X + with.W
-	withMaxY := with.Y + with.H
+func (sprt *ImageSprite) Update() bool {
+	if sprt.DX == 0 && sprt.DY == 0 {
+		return false
+	}
 
-	return sprt.X < withMaxX && with.X < sprtMaxX && sprt.Y < withMaxY && with.Y < sprtMaxY
+	sprt.X += sprt.DX
+	sprt.Y += sprt.DY
+	return true
+}
+
+func (sprt *ImageSprite) Visible() bool {
+	return !sprt.Hidden
+}
+
+func (sprt *ImageSprite) Collision(with Sprite) {
+	// Nothing
+}
+
+func (sprt *ImageSprite) Corners() (float64, float64, float64, float64) {
+	return sprt.X, sprt.Y, sprt.X + sprt.Width, sprt.Y + sprt.Height
+}
+
+func (sprt *ImageSprite) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
+	if sprt.Hidden || sprt.Image == nil {
+		return
+	}
+
+	op.GeoM.Translate(sprt.X, sprt.Y)
+	screen.DrawImage(sprt.Image, op)
+}
+
+func NewImageSpriteFill(x, y float64, w, h int, clr color.Color) ImageSprite {
+	img := ebiten.NewImage(w, h)
+	img.Fill(clr)
+
+	return ImageSprite{
+		X:      x,
+		Y:      y,
+		Width:  float64(w),
+		Height: float64(h),
+		Image:  img,
+	}
 }
