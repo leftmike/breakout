@@ -2,6 +2,7 @@ package engine
 
 import (
 	"image/color"
+	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -21,6 +22,7 @@ type Sprite interface {
 	Visible() bool
 	Collision(with Sprite)
 	Corners() (float64, float64, float64, float64)
+	Center() (float64, float64)
 	Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions)
 	Deleted() bool
 }
@@ -126,6 +128,10 @@ func (sprt *ImageSprite) Corners() (float64, float64, float64, float64) {
 	return sprt.X, sprt.Y, sprt.X + sprt.Width, sprt.Y + sprt.Height
 }
 
+func (sprt *ImageSprite) Center() (float64, float64) {
+	return sprt.X + sprt.Width/2, sprt.Y + sprt.Height/2
+}
+
 func (sprt *ImageSprite) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
 	if sprt.Hidden || sprt.Image == nil {
 		return
@@ -141,6 +147,43 @@ func (sprt *ImageSprite) Deleted() bool {
 
 func (sprt *ImageSprite) Delete() {
 	sprt.deleted = true
+}
+
+type CollideDirection int
+
+const (
+	CollideXGreater CollideDirection = iota
+	CollideXLess
+	CollideYGreater
+	CollideYLess
+)
+
+// Collide returns sprt relative to with.
+func Collide(sprt, with Sprite) CollideDirection {
+	x1, y1 := sprt.Center()
+	x2, y2 := with.Center()
+	if math.Abs(x1-x2) > math.Abs(y1-y2) {
+		if x1 > x2 {
+			return CollideXGreater
+		}
+		return CollideXLess
+	}
+
+	if y1 > y2 {
+		return CollideYGreater
+	}
+	return CollideYLess
+	/*
+		at2 := math.Atan2(y2-y1, x2-x1)
+		if at2 > math.Pi/4 && at2 < math.Pi*3/4 {
+			return CollideYLess
+		} else if at2 > -math.Pi*3/4 && at2 < -math.Pi/4 {
+			return CollideYGreater
+		} else if at2 > math.Pi*3/4 || at2 < -math.Pi*3/4 {
+			return CollideXGreater
+		}
+		return CollideXLess
+	*/
 }
 
 func NewImageSprite(x, y float64, img *ebiten.Image) ImageSprite {

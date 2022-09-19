@@ -31,6 +31,10 @@ const (
 	ballHeight = 10
 	ballX      = (screenWidth - ballWidth) / 2
 	ballY      = 0
+
+	blockSize   = 30
+	blockMargin = 2
+	blockBorder = blockSize * 3 / 2
 )
 
 var (
@@ -45,6 +49,7 @@ var (
 			engine.NewImageFill(paddleWidth, paddleHeight, color.RGBA{0, 0xFF, 0, 0xFF})),
 	}
 	ballImg   = engine.NewImageFill(ballWidth, ballHeight, color.RGBA{0, 0, 0, 0xFF})
+	blockImg  = engine.NewImageFill(blockSize, blockSize, color.RGBA{0, 0, 0xFF, 0xFF})
 	gameLayer = engine.Layer{
 		Sprites: []engine.Sprite{
 			&paddle,
@@ -87,11 +92,10 @@ func (sprt *PaddleSprite) Update() bool {
 		start = false
 
 		ball := BallSprite{
-			ImageSprite: engine.NewImageSprite(0, 0, ballImg),
+			ImageSprite: engine.NewImageSprite(sprt.X+(paddleWidth-ballWidth)/2,
+				sprt.Y-ballHeight, ballImg),
 		}
 		ball.speed = 4
-		ball.X = sprt.X + (paddleWidth-ballWidth)/2
-		ball.Y = sprt.Y - ballHeight
 		ball.setDXDY((rand.Float64() * ball.speed / 2) - ball.speed)
 
 		gameLayer.Sprites = append(gameLayer.Sprites, &ball)
@@ -167,19 +171,42 @@ func (sprt *BallSprite) setDXDY(dx float64) {
 }
 
 func (sprt *BallSprite) Collision(with engine.Sprite) {
-	if sprt.X < 0 {
-		sprt.X = 0
-		sprt.DX = -sprt.DX
-	} else if sprt.Y < 0 {
-		sprt.Y = 0
-		sprt.DY = -sprt.DY
-	} else if sprt.X+sprt.Width > screenWidth {
-		sprt.X = screenWidth - sprt.Width
-		sprt.DX = -sprt.DX
-	} else if sprt.Y+sprt.Height > screenHeight {
-		start = true
-		sprt.Delete()
+	if block, ok := with.(*BlockSprite); ok {
+		block.collision(sprt)
+	} else {
+		if sprt.X < 0 {
+			sprt.X = 0
+			sprt.DX = -sprt.DX
+		} else if sprt.Y < 0 {
+			sprt.Y = 0
+			sprt.DY = -sprt.DY
+		} else if sprt.X+sprt.Width > screenWidth {
+			sprt.X = screenWidth - sprt.Width
+			sprt.DX = -sprt.DX
+		} else if sprt.Y+sprt.Height > screenHeight {
+			start = true
+			sprt.Delete()
+		}
 	}
+}
+
+type BlockSprite struct {
+	engine.ImageSprite
+}
+
+func (sprt *BlockSprite) collision(ball *BallSprite) {
+	switch engine.Collide(ball, sprt) {
+	case engine.CollideXGreater:
+		ball.DX = math.Abs(ball.DX)
+	case engine.CollideXLess:
+		ball.DX = -math.Abs(ball.DX)
+	case engine.CollideYGreater:
+		ball.DY = math.Abs(ball.DY)
+	case engine.CollideYLess:
+		ball.DY = -math.Abs(ball.DY)
+	}
+
+	sprt.Delete()
 }
 
 type breakout struct{}
@@ -208,6 +235,23 @@ func (bo *breakout) Layout(w, h int) (int, int) {
 }
 
 func main() {
+	cols := screenWidth / blockSize
+	for cols*blockSize+(cols-1)*blockMargin+blockBorder*2 > screenWidth {
+		cols -= 1
+	}
+
+	leftBorder := (screenWidth - (cols*blockSize + (cols-1)*blockMargin)) / 2
+	for col := 0; col < cols; col += 1 {
+		for row := 0; row*(blockSize+blockMargin) < screenHeight/2; row += 1 {
+			gameLayer.Sprites = append(gameLayer.Sprites,
+				&BlockSprite{
+					ImageSprite: engine.NewImageSprite(
+						float64(leftBorder+col*blockSize+(col-1)*blockMargin),
+						float64(blockBorder+row*blockSize+(row-1)*blockMargin), blockImg),
+				})
+		}
+	}
+
 	ebiten.SetWindowSize(windowWidth, windowHeight)
 	ebiten.SetWindowTitle("Breakout")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
