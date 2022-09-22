@@ -52,7 +52,7 @@ func TestDelete(t *testing.T) {
 		},
 	}
 
-	level.Draw(nil)
+	level.Draw(0, nil)
 
 	got := gotSprites(level.Layers[0].Sprites)
 	want := []int{0, 1, 2, 3, 4, 5, 6, 7}
@@ -61,7 +61,7 @@ func TestDelete(t *testing.T) {
 	}
 
 	sprites[3].(*engine.ImageSprite).Delete()
-	level.Draw(nil)
+	level.Draw(0, nil)
 	got = gotSprites(level.Layers[0].Sprites)
 	want = []int{0, 1, 2, 4, 5, 6, 7}
 	if !reflect.DeepEqual(got, want) {
@@ -69,7 +69,7 @@ func TestDelete(t *testing.T) {
 	}
 
 	sprites[7].(*engine.ImageSprite).Delete()
-	level.Draw(nil)
+	level.Draw(0, nil)
 	got = gotSprites(level.Layers[0].Sprites)
 	want = []int{0, 1, 2, 4, 5, 6}
 	if !reflect.DeepEqual(got, want) {
@@ -77,7 +77,7 @@ func TestDelete(t *testing.T) {
 	}
 
 	sprites[0].(*engine.ImageSprite).Delete()
-	level.Draw(nil)
+	level.Draw(0, nil)
 	got = gotSprites(level.Layers[0].Sprites)
 	want = []int{1, 2, 4, 5, 6}
 	if !reflect.DeepEqual(got, want) {
@@ -85,7 +85,7 @@ func TestDelete(t *testing.T) {
 	}
 
 	level.Layers[0].Sprites = append(level.Layers[0].Sprites, &engine.ImageSprite{X: 8})
-	level.Draw(nil)
+	level.Draw(0, nil)
 	got = gotSprites(level.Layers[0].Sprites)
 	want = []int{1, 2, 4, 5, 6, 8}
 	if !reflect.DeepEqual(got, want) {
@@ -93,7 +93,7 @@ func TestDelete(t *testing.T) {
 	}
 
 	sprites[4].(*engine.ImageSprite).Delete()
-	level.Draw(nil)
+	level.Draw(0, nil)
 	got = gotSprites(level.Layers[0].Sprites)
 	want = []int{1, 2, 5, 6, 8}
 	if !reflect.DeepEqual(got, want) {

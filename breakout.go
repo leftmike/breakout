@@ -13,6 +13,12 @@ import (
 )
 
 const (
+	demoMode engine.Mode = iota
+	pauseMode
+	playMode
+)
+
+const (
 	windowWidth  = 500
 	windowHeight = 500
 	screenWidth  = 400
@@ -38,7 +44,9 @@ const (
 )
 
 var (
-	start = true
+	mode = playMode
+
+	start = true // XXX
 
 	errQuit = errorQuit{}
 
@@ -51,6 +59,7 @@ var (
 	ballImg   = engine.NewImageFill(ballWidth, ballHeight, color.RGBA{0, 0, 0, 0xFF})
 	blockImg  = engine.NewImageFill(blockSize, blockSize, color.RGBA{0, 0, 0xFF, 0xFF})
 	gameLayer = engine.Layer{
+		Paused: []bool{pauseMode: true},
 		Sprites: []engine.Sprite{
 			&paddle,
 			&engine.ImageSprite{ // left
@@ -87,7 +96,7 @@ type PaddleSprite struct {
 	engine.ImageSprite
 }
 
-func (sprt *PaddleSprite) Update() bool {
+func (sprt *PaddleSprite) Update(mode engine.Mode) bool {
 	if start && ebiten.IsKeyPressed(ebiten.KeySpace) {
 		start = false
 
@@ -138,7 +147,9 @@ func (sprt *PaddleSprite) Collision(with engine.Sprite) {
 	}
 }
 
-func (sprt *PaddleSprite) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
+func (sprt *PaddleSprite) Draw(mode engine.Mode, screen *ebiten.Image,
+	op *ebiten.DrawImageOptions) {
+
 	op.GeoM.Translate(sprt.X, sprt.Y)
 	screen.DrawImage(sprt.Image, op)
 
@@ -223,19 +234,19 @@ func (bo *breakout) Update() error {
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyP) || ebiten.IsKeyPressed(ebiten.KeyEscape) {
-		gameLayer.Paused = true
+		mode = pauseMode
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyC) {
-		gameLayer.Paused = false
+		mode = playMode
 	}
 
-	level.Update()
+	level.Update(mode)
 	return nil
 }
 
 func (bo *breakout) Draw(screen *ebiten.Image) {
-	level.Draw(screen)
+	level.Draw(mode, screen)
 }
 
 func (bo *breakout) Layout(w, h int) (int, int) {

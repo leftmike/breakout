@@ -12,36 +12,38 @@ type Level struct {
 }
 
 type Layer struct {
-	Hidden  bool
-	Paused  bool
+	Hidden  []bool
+	Paused  []bool
 	Sprites []Sprite
 	updated []Sprite
 }
 
+type Mode int
+
 type Sprite interface {
-	Update() bool
+	Update(mode Mode) bool
 	Visible() bool
 	Collision(with Sprite)
 	Corners() (float64, float64, float64, float64)
 	Center() (float64, float64)
-	Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions)
+	Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions)
 	Deleted() bool
 }
 
-func (lvl *Level) Update() {
+func (lvl *Level) Update(mode Mode) {
 	for _, lyr := range lvl.Layers {
-		lyr.update()
+		lyr.update(mode)
 	}
 }
 
-func (lvl *Level) Draw(screen *ebiten.Image) {
+func (lvl *Level) Draw(mode Mode, screen *ebiten.Image) {
 	for _, lyr := range lvl.Layers {
-		lyr.draw(screen)
+		lyr.draw(mode, screen)
 	}
 }
 
-func (lyr *Layer) update() {
-	if lyr.Paused {
+func (lyr *Layer) update(mode Mode) {
+	if int(mode) < len(lyr.Paused) && lyr.Paused[mode] {
 		return
 	}
 
@@ -56,7 +58,7 @@ func (lyr *Layer) update() {
 			continue
 		}
 
-		if sprt.Update() {
+		if sprt.Update(mode) {
 			lyr.updated = append(lyr.updated, sprt)
 		}
 	}
@@ -86,8 +88,8 @@ func (lyr *Layer) update() {
 	}
 }
 
-func (lyr *Layer) draw(screen *ebiten.Image) {
-	if lyr.Hidden {
+func (lyr *Layer) draw(mode Mode, screen *ebiten.Image) {
+	if int(mode) < len(lyr.Hidden) && lyr.Hidden[mode] {
 		return
 	}
 
@@ -98,7 +100,7 @@ func (lyr *Layer) draw(screen *ebiten.Image) {
 		}
 
 		var op ebiten.DrawImageOptions
-		sprt.Draw(screen, &op)
+		sprt.Draw(mode, screen, &op)
 		lyr.Sprites[cnt] = sprt
 		cnt += 1
 	}
@@ -115,7 +117,7 @@ type ImageSprite struct {
 	deleted       bool
 }
 
-func (sprt *ImageSprite) Update() bool {
+func (sprt *ImageSprite) Update(mode Mode) bool {
 	if sprt.DX == 0 && sprt.DY == 0 {
 		return false
 	}
@@ -141,7 +143,7 @@ func (sprt *ImageSprite) Center() (float64, float64) {
 	return sprt.X + sprt.Width/2, sprt.Y + sprt.Height/2
 }
 
-func (sprt *ImageSprite) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
+func (sprt *ImageSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions) {
 	if sprt.Hidden || sprt.Image == nil {
 		return
 	}
