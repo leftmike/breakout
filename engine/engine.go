@@ -13,6 +13,7 @@ type Level struct {
 
 type Layer struct {
 	Hidden  bool
+	Paused  bool
 	Sprites []Sprite
 	updated []Sprite
 }
@@ -40,6 +41,10 @@ func (lvl *Level) Draw(screen *ebiten.Image) {
 }
 
 func (lyr *Layer) update() {
+	if lyr.Paused {
+		return
+	}
+
 	if lyr.updated == nil {
 		lyr.updated = make([]Sprite, 0, len(lyr.Sprites))
 	} else {
@@ -86,7 +91,7 @@ func (lyr *Layer) draw(screen *ebiten.Image) {
 		return
 	}
 
-	// XXX: cleanup deleted sprites
+	cnt := 0
 	for _, sprt := range lyr.Sprites {
 		if sprt.Deleted() {
 			continue
@@ -94,7 +99,11 @@ func (lyr *Layer) draw(screen *ebiten.Image) {
 
 		var op ebiten.DrawImageOptions
 		sprt.Draw(screen, &op)
+		lyr.Sprites[cnt] = sprt
+		cnt += 1
 	}
+
+	lyr.Sprites = lyr.Sprites[:cnt]
 }
 
 type ImageSprite struct {

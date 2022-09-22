@@ -222,6 +222,14 @@ func (bo *breakout) Update() error {
 		return errQuit
 	}
 
+	if ebiten.IsKeyPressed(ebiten.KeyP) || ebiten.IsKeyPressed(ebiten.KeyEscape) {
+		gameLayer.Paused = true
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyC) {
+		gameLayer.Paused = false
+	}
+
 	level.Update()
 	return nil
 }
