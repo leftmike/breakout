@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"image/color"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -108,58 +107,6 @@ func (lyr *Layer) draw(mode Mode, screen *ebiten.Image) {
 	lyr.Sprites = lyr.Sprites[:cnt]
 }
 
-type ImageSprite struct {
-	Hidden        bool
-	X, Y          float64
-	DX, DY        float64
-	Width, Height float64
-	Image         *ebiten.Image
-	deleted       bool
-}
-
-func (sprt *ImageSprite) Update(mode Mode) bool {
-	if sprt.DX == 0 && sprt.DY == 0 {
-		return false
-	}
-
-	sprt.X += sprt.DX
-	sprt.Y += sprt.DY
-	return true
-}
-
-func (sprt *ImageSprite) Visible() bool {
-	return !sprt.Hidden
-}
-
-func (sprt *ImageSprite) Collision(with Sprite) {
-	// Nothing
-}
-
-func (sprt *ImageSprite) Corners() (float64, float64, float64, float64) {
-	return sprt.X, sprt.Y, sprt.X + sprt.Width, sprt.Y + sprt.Height
-}
-
-func (sprt *ImageSprite) Center() (float64, float64) {
-	return sprt.X + sprt.Width/2, sprt.Y + sprt.Height/2
-}
-
-func (sprt *ImageSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions) {
-	if sprt.Hidden || sprt.Image == nil {
-		return
-	}
-
-	op.GeoM.Translate(sprt.X, sprt.Y)
-	screen.DrawImage(sprt.Image, op)
-}
-
-func (sprt *ImageSprite) Deleted() bool {
-	return sprt.deleted
-}
-
-func (sprt *ImageSprite) Delete() {
-	sprt.deleted = true
-}
-
 type CollideDirection int
 
 const (
@@ -195,23 +142,4 @@ func Collide(sprt, with Sprite) CollideDirection {
 		}
 		return CollideXLess
 	*/
-}
-
-func NewImageSprite(x, y float64, img *ebiten.Image) ImageSprite {
-	w, h := img.Size()
-
-	return ImageSprite{
-		X:      x,
-		Y:      y,
-		Width:  float64(w),
-		Height: float64(h),
-		Image:  img,
-	}
-}
-
-func NewImageFill(w, h int, clr color.Color) *ebiten.Image {
-	img := ebiten.NewImage(w, h)
-	img.Fill(clr)
-
-	return img
 }

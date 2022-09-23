@@ -9,7 +9,11 @@ import (
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/opentype"
+
 	"github.com/leftmike/breakout/engine"
+	"github.com/leftmike/breakout/fonts"
 )
 
 const (
@@ -50,6 +54,7 @@ var (
 
 	errQuit = errorQuit{}
 
+	face       = NewFace(fonts.RobotoRegular(), 24)
 	background = engine.NewImageSprite(0, 0,
 		engine.NewImageFill(screenWidth, screenHeight, color.RGBA{0xFF, 0xFF, 0xFF, 0xFF}))
 	paddle = PaddleSprite{
@@ -88,6 +93,17 @@ var (
 				},
 			},
 			&gameLayer,
+			&engine.Layer{
+				Hidden: []bool{demoMode: true, playMode: true},
+				Paused: []bool{demoMode: true, playMode: true},
+				Sprites: []engine.Sprite{
+					&engine.TextSprite{
+						Text:  "Paused",
+						Face:  face,
+						Color: color.RGBA{0, 0, 0, 0xFF},
+					},
+				},
+			},
 		},
 	}
 )
@@ -251,6 +267,20 @@ func (bo *breakout) Draw(screen *ebiten.Image) {
 
 func (bo *breakout) Layout(w, h int) (int, int) {
 	return screenWidth, screenHeight
+}
+
+func NewFace(fnt *opentype.Font, sz float64) font.Face {
+	face, err := opentype.NewFace(fnt,
+		&opentype.FaceOptions{
+			Size:    sz,
+			DPI:     72,
+			Hinting: font.HintingFull,
+		})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "font face: %s\n", err)
+		os.Exit(1)
+	}
+	return face
 }
 
 func main() {
