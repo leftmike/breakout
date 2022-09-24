@@ -11,8 +11,8 @@ type Level struct {
 }
 
 type Layer struct {
-	Hidden  []bool
-	Paused  []bool
+	Visible []bool
+	Active  []bool
 	Sprites []Sprite
 	updated []Sprite
 }
@@ -42,7 +42,7 @@ func (lvl *Level) Draw(mode Mode, screen *ebiten.Image) {
 }
 
 func (lyr *Layer) update(mode Mode) {
-	if int(mode) < len(lyr.Paused) && lyr.Paused[mode] {
+	if lyr.Active != nil && (int(mode) >= len(lyr.Active) || !lyr.Active[mode]) {
 		return
 	}
 
@@ -88,7 +88,7 @@ func (lyr *Layer) update(mode Mode) {
 }
 
 func (lyr *Layer) draw(mode Mode, screen *ebiten.Image) {
-	if int(mode) < len(lyr.Hidden) && lyr.Hidden[mode] {
+	if lyr.Visible != nil && (int(mode) >= len(lyr.Visible) || !lyr.Visible[mode]) {
 		return
 	}
 

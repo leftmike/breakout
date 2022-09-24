@@ -64,7 +64,7 @@ var (
 	ballImg   = engine.NewImageFill(ballWidth, ballHeight, color.RGBA{0, 0, 0, 0xFF})
 	blockImg  = engine.NewImageFill(blockSize, blockSize, color.RGBA{0, 0, 0xFF, 0xFF})
 	gameLayer = engine.Layer{
-		Paused: []bool{pauseMode: true},
+		Active: []bool{playMode: true},
 		Sprites: []engine.Sprite{
 			&paddle,
 			&engine.ImageSprite{ // left
@@ -94,8 +94,8 @@ var (
 			},
 			&gameLayer,
 			&engine.Layer{
-				Hidden: []bool{demoMode: true, playMode: true},
-				Paused: []bool{demoMode: true, playMode: true},
+				Visible: []bool{pauseMode: true},
+				Active:  []bool{pauseMode: true},
 				Sprites: []engine.Sprite{
 					&engine.TextSprite{
 						Text:  "Paused",
