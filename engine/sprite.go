@@ -35,12 +35,12 @@ func (sprt *ImageSprite) Collision(with Sprite) {
 	// Nothing
 }
 
-func (sprt *ImageSprite) Corners() (float64, float64, float64, float64) {
-	return sprt.X, sprt.Y, sprt.X + sprt.Width, sprt.Y + sprt.Height
+func (sprt *ImageSprite) Corner() (float64, float64) {
+	return sprt.X, sprt.Y
 }
 
-func (sprt *ImageSprite) Center() (float64, float64) {
-	return sprt.X + sprt.Width/2, sprt.Y + sprt.Height/2
+func (sprt *ImageSprite) Size() (float64, float64) {
+	return sprt.Width, sprt.Height
 }
 
 func (sprt *ImageSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions) {
@@ -104,12 +104,12 @@ func (sprt *TextSprite) Collision(with Sprite) {
 	// Nothing
 }
 
-func (sprt *TextSprite) Corners() (float64, float64, float64, float64) {
-	return sprt.X, sprt.Y, sprt.X + sprt.width, sprt.Y + sprt.height
+func (sprt *TextSprite) Corner() (float64, float64) {
+	return sprt.X, sprt.Y
 }
 
-func (sprt *TextSprite) Center() (float64, float64) {
-	return sprt.X + sprt.width/2, sprt.Y + sprt.height/2
+func (sprt *TextSprite) Size() (float64, float64) {
+	return sprt.width, sprt.height
 }
 
 func (sprt *TextSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions) {
@@ -165,12 +165,12 @@ func (sprt *RectSprite) Collision(with Sprite) {
 	// Nothing
 }
 
-func (sprt *RectSprite) Corners() (float64, float64, float64, float64) {
-	return sprt.X, sprt.Y, sprt.X + sprt.Width, sprt.Y + sprt.Height
+func (sprt *RectSprite) Corner() (float64, float64) {
+	return sprt.X, sprt.Y
 }
 
-func (sprt *RectSprite) Center() (float64, float64) {
-	return sprt.X + sprt.Width/2, sprt.Y + sprt.Height/2
+func (sprt *RectSprite) Size() (float64, float64) {
+	return sprt.Width, sprt.Height
 }
 
 func (sprt *RectSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions) {

@@ -23,8 +23,8 @@ type Sprite interface {
 	Update(mode Mode) bool
 	Visible() bool
 	Collision(with Sprite)
-	Corners() (float64, float64, float64, float64)
-	Center() (float64, float64)
+	Corner() (float64, float64)
+	Size() (float64, float64)
 	Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions)
 	Deleted() bool
 }
@@ -68,16 +68,18 @@ func (lyr *Layer) update(mode Mode) {
 		}
 
 		if sprt.Visible() {
-			sprtMinX, sprtMinY, sprtMaxX, sprtMaxY := sprt.Corners()
+			sprtX, sprtY := sprt.Corner()
+			sprtW, sprtH := sprt.Size()
 			for _, with := range lyr.Sprites {
 				if with == sprt || with.Deleted() {
 					continue
 				}
 
 				if with.Visible() {
-					withMinX, withMinY, withMaxX, withMaxY := with.Corners()
-					if sprtMinX < withMaxX && withMinX < sprtMaxX && sprtMinY < withMaxY &&
-						withMinY < sprtMaxY {
+					withX, withY := with.Corner()
+					withW, withH := with.Size()
+					if sprtX < withX+withW && withX < sprtX+sprtW &&
+						sprtY < withY+withH && withY < sprtY+sprtH {
 
 						sprt.Collision(with)
 					}
@@ -118,8 +120,16 @@ const (
 
 // Collide returns sprt relative to with.
 func Collide(sprt, with Sprite) CollideDirection {
-	x1, y1 := sprt.Center()
-	x2, y2 := with.Center()
+	x1, y1 := sprt.Corner()
+	w, h := sprt.Size()
+	x1 += w / 2
+	y1 += h / 2
+
+	x2, y2 := with.Corner()
+	w, h = with.Size()
+	x2 += w / 2
+	y2 += h / 2
+
 	if math.Abs(x1-x2) > math.Abs(y1-y2) {
 		if x1 > x2 {
 			return CollideXGreater

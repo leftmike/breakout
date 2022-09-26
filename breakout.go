@@ -158,8 +158,8 @@ func (sprt *PaddleSprite) Collision(with engine.Sprite) {
 	} else if sprt.X < 0 {
 		sprt.X = 0
 		sprt.DX = -sprt.DX / 2
-	} else if sprt.X+sprt.Width > screenWidth {
-		sprt.X = screenWidth - sprt.Width
+	} else if w, _ := sprt.Size(); sprt.X+w > screenWidth {
+		sprt.X = screenWidth - w
 		sprt.DX = -sprt.DX / 2
 	}
 }
@@ -208,12 +208,15 @@ func (sprt *BallSprite) Collision(with engine.Sprite) {
 		} else if sprt.Y < 0 {
 			sprt.Y = 0
 			sprt.DY = -sprt.DY
-		} else if sprt.X+sprt.Width > screenWidth {
-			sprt.X = screenWidth - sprt.Width
-			sprt.DX = -sprt.DX
-		} else if sprt.Y+sprt.Height > screenHeight {
-			start = true
-			sprt.Delete()
+		} else {
+			w, h := sprt.Size()
+			if sprt.X+w > screenWidth {
+				sprt.X = screenWidth - w
+				sprt.DX = -sprt.DX
+			} else if sprt.Y+h > screenHeight {
+				start = true
+				sprt.Delete()
+			}
 		}
 	}
 }
