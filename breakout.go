@@ -54,9 +54,7 @@ var (
 
 	errQuit = errorQuit{}
 
-	face       = NewFace(fonts.RobotoRegular(), 24)
-	background = engine.NewImageSprite(0, 0,
-		engine.NewImageFill(screenWidth, screenHeight, color.RGBA{0xFF, 0xFF, 0xFF, 0xFF}))
+	face   = NewFace(fonts.RobotoRegular(), 24)
 	paddle = PaddleSprite{
 		ImageSprite: engine.NewImageSprite(paddleX, paddleY,
 			engine.NewImageFill(paddleWidth, paddleHeight, color.RGBA{0, 0xFF, 0, 0xFF})),
@@ -67,19 +65,19 @@ var (
 		Active: []bool{playMode: true},
 		Sprites: []engine.Sprite{
 			&paddle,
-			&engine.ImageSprite{ // left
+			&engine.RectSprite{ // left
 				X: -1, Y: 0,
 				Width: 0, Height: screenHeight,
 			},
-			&engine.ImageSprite{ // right
+			&engine.RectSprite{ // right
 				X: screenWidth, Y: 0,
 				Width: 0, Height: screenHeight,
 			},
-			&engine.ImageSprite{ // top
+			&engine.RectSprite{ // top
 				X: 0, Y: -1,
 				Width: screenWidth, Height: 0,
 			},
-			&engine.ImageSprite{ // bottom
+			&engine.RectSprite{ // bottom
 				X: 0, Y: screenHeight,
 				Width: screenWidth, Height: 0,
 			},
@@ -89,7 +87,10 @@ var (
 		Layers: []*engine.Layer{
 			&engine.Layer{
 				Sprites: []engine.Sprite{
-					&background,
+					&engine.RectSprite{
+						X: 0, Y: 0, Width: screenWidth, Height: screenHeight,
+						Color: color.RGBA{0xFF, 0xFF, 0xFF, 0xFF},
+					},
 				},
 			},
 			&gameLayer,

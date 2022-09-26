@@ -129,3 +129,64 @@ func (sprt *TextSprite) Deleted() bool {
 func (sprt *TextSprite) Delete() {
 	sprt.deleted = true
 }
+
+type RectSprite struct {
+	Hidden        bool
+	X, Y          float64
+	Width, Height float64
+	Color         color.RGBA
+	w, h          float64
+	clr           color.RGBA
+	img           *ebiten.Image
+	deleted       bool
+}
+
+func (sprt *RectSprite) Update(mode Mode) bool {
+	if sprt.w != sprt.Width || sprt.h != sprt.Height || sprt.clr != sprt.Color {
+		sprt.w = sprt.Width
+		sprt.h = sprt.Height
+		sprt.clr = sprt.Color
+		if sprt.w > 0 && sprt.h > 0 {
+			sprt.img = ebiten.NewImage(int(sprt.w), int(sprt.h))
+			sprt.img.Fill(sprt.clr)
+		} else {
+			sprt.img = nil
+		}
+	}
+
+	return false
+}
+
+func (sprt *RectSprite) Visible() bool {
+	return !sprt.Hidden
+}
+
+func (sprt *RectSprite) Collision(with Sprite) {
+	// Nothing
+}
+
+func (sprt *RectSprite) Corners() (float64, float64, float64, float64) {
+	return sprt.X, sprt.Y, sprt.X + sprt.Width, sprt.Y + sprt.Height
+}
+
+func (sprt *RectSprite) Center() (float64, float64) {
+	return sprt.X + sprt.Width/2, sprt.Y + sprt.Height/2
+}
+
+func (sprt *RectSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions) {
+	if sprt.Hidden || sprt.img == nil {
+		return
+	}
+	sprt.Update(mode)
+
+	op.GeoM.Translate(sprt.X, sprt.Y)
+	screen.DrawImage(sprt.img, op)
+}
+
+func (sprt *RectSprite) Deleted() bool {
+	return sprt.deleted
+}
+
+func (sprt *RectSprite) Delete() {
+	sprt.deleted = true
+}
