@@ -83,20 +83,28 @@ type TextSprite struct {
 	Hidden     bool
 	X, Y       float64
 	Text       string
+	Align      Align
+	Face       font.Face
+	Color      color.Color
+	Background color.Color
+	Margin     float64
 	text       string
 	lines      []string
 	widths     []int
 	maxWidth   int
 	lineHeight int
-	Align      Align
-	Face       font.Face
-	Color      color.Color
+	background color.Color
+	margin     float64
+	img        *ebiten.Image
 	deleted    bool
 }
 
 func (sprt *TextSprite) Init(mode Mode) {
-	if sprt.text != sprt.Text {
+	if sprt.text != sprt.Text || sprt.background != sprt.Background || sprt.margin != sprt.Margin {
 		sprt.text = sprt.Text
+		sprt.background = sprt.Background
+		sprt.margin = sprt.Margin
+
 		sprt.lines = strings.Split(sprt.text, "\n")
 		sprt.widths = nil
 		sprt.maxWidth = 0
@@ -110,6 +118,14 @@ func (sprt *TextSprite) Init(mode Mode) {
 		}
 		metrics := sprt.Face.Metrics()
 		sprt.lineHeight = metrics.Height.Ceil()
+
+		if sprt.background == nil {
+			sprt.img = nil
+		} else {
+			w, h := sprt.Size()
+			sprt.img = ebiten.NewImage(int(w), int(h))
+			sprt.img.Fill(sprt.background)
+		}
 	}
 }
 
@@ -130,7 +146,8 @@ func (sprt *TextSprite) Corner() (float64, float64) {
 }
 
 func (sprt *TextSprite) Size() (float64, float64) {
-	return float64(sprt.maxWidth), float64(sprt.lineHeight * len(sprt.lines))
+	return float64(sprt.maxWidth) + sprt.margin*2,
+		float64(sprt.lineHeight*len(sprt.lines)) + sprt.margin*2
 }
 
 func (sprt *TextSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions) {
@@ -138,8 +155,13 @@ func (sprt *TextSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawIma
 		return
 	}
 
-	op.ColorM.ScaleWithColor(sprt.Color)
 	op.GeoM.Translate(sprt.X, sprt.Y)
+	if sprt.img != nil {
+		screen.DrawImage(sprt.img, op)
+	}
+
+	op.GeoM.Translate(sprt.margin, sprt.margin)
+	op.ColorM.ScaleWithColor(sprt.Color)
 	for cnt, line := range sprt.lines {
 		nop := *op
 		switch sprt.Align {

@@ -102,10 +102,12 @@ var (
 				Active:  []bool{pauseMode: true},
 				Sprites: []engine.Sprite{
 					&engine.TextSprite{
-						Text:  "Paused\npress C to continue",
-						Align: engine.AlignCenter,
-						Face:  face,
-						Color: color.RGBA{0, 0, 0, 0xFF},
+						Text:       "Paused\npress C to continue",
+						Align:      engine.AlignCenter,
+						Face:       face,
+						Color:      color.RGBA{0, 0, 0, 0xFF},
+						Margin:     5,
+						Background: color.RGBA{0, 0, 0, 0x20},
 					},
 				},
 			},
