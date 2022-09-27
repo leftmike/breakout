@@ -2,6 +2,7 @@ package engine
 
 import (
 	"image/color"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text"
@@ -70,24 +71,49 @@ func (sprt *ImageSprite) Delete() {
 	sprt.deleted = true
 }
 
+type Align int
+
+const (
+	AlignLeft Align = iota
+	AlignCenter
+	AlignRight
+)
+
 type TextSprite struct {
-	Hidden        bool
-	X, Y          float64
-	width, height float64
-	Text          string
-	Face          font.Face
-	Color         color.Color
-	deleted       bool
+	Hidden     bool
+	X, Y       float64
+	Text       string
+	text       string
+	lines      []string
+	widths     []int
+	maxWidth   int
+	lineHeight int
+	Align      Align
+	Face       font.Face
+	Color      color.Color
+	deleted    bool
 }
 
 func (sprt *TextSprite) Init(mode Mode) {
-	// Nothing
+	if sprt.text != sprt.Text {
+		sprt.text = sprt.Text
+		sprt.lines = strings.Split(sprt.text, "\n")
+		sprt.widths = nil
+		sprt.maxWidth = 0
+		for _, line := range sprt.lines {
+			rect := text.BoundString(sprt.Face, line)
+			w := rect.Max.X - rect.Min.X
+			sprt.widths = append(sprt.widths, w)
+			if w > sprt.maxWidth {
+				sprt.maxWidth = w
+			}
+		}
+		metrics := sprt.Face.Metrics()
+		sprt.lineHeight = metrics.Height.Ceil()
+	}
 }
 
 func (sprt *TextSprite) Update(mode Mode) bool {
-	rect := text.BoundString(sprt.Face, sprt.Text)
-	sprt.width = float64(rect.Max.X - rect.Min.X)
-	sprt.height = float64(rect.Max.Y - rect.Min.Y)
 	return false
 }
 
@@ -104,17 +130,30 @@ func (sprt *TextSprite) Corner() (float64, float64) {
 }
 
 func (sprt *TextSprite) Size() (float64, float64) {
-	return sprt.width, sprt.height
+	return float64(sprt.maxWidth), float64(sprt.lineHeight * len(sprt.lines))
 }
 
 func (sprt *TextSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions) {
-	if sprt.Hidden || sprt.Text == "" {
+	if sprt.Hidden {
 		return
 	}
 
 	op.ColorM.ScaleWithColor(sprt.Color)
-	op.GeoM.Translate(sprt.X, sprt.Y+sprt.height)
-	text.DrawWithOptions(screen, sprt.Text, sprt.Face, op)
+	op.GeoM.Translate(sprt.X, sprt.Y)
+	for cnt, line := range sprt.lines {
+		nop := *op
+		switch sprt.Align {
+		case AlignLeft:
+			nop.GeoM.Translate(0, float64((cnt+1)*sprt.lineHeight))
+		case AlignCenter:
+			nop.GeoM.Translate(float64(sprt.maxWidth-sprt.widths[cnt])/2,
+				float64((cnt+1)*sprt.lineHeight))
+		case AlignRight:
+			nop.GeoM.Translate(float64(sprt.maxWidth-sprt.widths[cnt]),
+				float64((cnt+1)*sprt.lineHeight))
+		}
+		text.DrawWithOptions(screen, line, sprt.Face, &nop)
+	}
 }
 
 func (sprt *TextSprite) Deleted() bool {
