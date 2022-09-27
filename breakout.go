@@ -56,11 +56,14 @@ var (
 
 	face   = NewFace(fonts.RobotoRegular(), 24)
 	paddle = PaddleSprite{
-		ImageSprite: engine.NewImageSprite(paddleX, paddleY,
-			engine.NewImageFill(paddleWidth, paddleHeight, color.RGBA{0, 0xFF, 0, 0xFF})),
+		ImageSprite: engine.ImageSprite{
+			X:     paddleX,
+			Y:     paddleY,
+			Image: newImageFill(paddleWidth, paddleHeight, color.RGBA{0, 0xFF, 0, 0xFF}),
+		},
 	}
-	ballImg   = engine.NewImageFill(ballWidth, ballHeight, color.RGBA{0, 0, 0, 0xFF})
-	blockImg  = engine.NewImageFill(blockSize, blockSize, color.RGBA{0, 0, 0xFF, 0xFF})
+	ballImg   = newImageFill(ballWidth, ballHeight, color.RGBA{0, 0, 0, 0xFF})
+	blockImg  = newImageFill(blockSize, blockSize, color.RGBA{0, 0, 0xFF, 0xFF})
 	gameLayer = engine.Layer{
 		Active: []bool{playMode: true},
 		Sprites: []engine.Sprite{
@@ -118,8 +121,11 @@ func (sprt *PaddleSprite) Update(mode engine.Mode) bool {
 		start = false
 
 		ball := BallSprite{
-			ImageSprite: engine.NewImageSprite(sprt.X+(paddleWidth-ballWidth)/2,
-				sprt.Y-ballHeight, ballImg),
+			ImageSprite: engine.ImageSprite{
+				X:     sprt.X + (paddleWidth-ballWidth)/2,
+				Y:     sprt.Y - ballHeight,
+				Image: ballImg,
+			},
 		}
 		ball.speed = 4
 		ball.setDXDY((rand.Float64() * ball.speed / 2) - ball.speed)
@@ -287,6 +293,13 @@ func NewFace(fnt *opentype.Font, sz float64) font.Face {
 	return face
 }
 
+func newImageFill(w, h int, clr color.Color) *ebiten.Image {
+	img := ebiten.NewImage(w, h)
+	img.Fill(clr)
+
+	return img
+}
+
 func main() {
 	cols := screenWidth / blockSize
 	for cols*blockSize+(cols-1)*blockMargin+blockBorder*2 > screenWidth {
@@ -298,9 +311,11 @@ func main() {
 		for row := 0; row*(blockSize+blockMargin) < screenHeight/2; row += 1 {
 			gameLayer.Sprites = append(gameLayer.Sprites,
 				&BlockSprite{
-					ImageSprite: engine.NewImageSprite(
-						float64(leftBorder+col*blockSize+(col-1)*blockMargin),
-						float64(blockBorder+row*blockSize+(row-1)*blockMargin), blockImg),
+					ImageSprite: engine.ImageSprite{
+						X:     float64(leftBorder + col*blockSize + (col-1)*blockMargin),
+						Y:     float64(blockBorder + row*blockSize + (row-1)*blockMargin),
+						Image: blockImg,
+					},
 				})
 		}
 	}

@@ -12,9 +12,19 @@ type ImageSprite struct {
 	Hidden        bool
 	X, Y          float64
 	DX, DY        float64
-	Width, Height float64
+	width, height float64
 	Image         *ebiten.Image
+	img           *ebiten.Image
 	deleted       bool
+}
+
+func (sprt *ImageSprite) Init(mode Mode) {
+	if sprt.img != sprt.Image {
+		sprt.img = sprt.Image
+		w, h := sprt.img.Size()
+		sprt.width = float64(w)
+		sprt.height = float64(h)
+	}
 }
 
 func (sprt *ImageSprite) Update(mode Mode) bool {
@@ -40,11 +50,11 @@ func (sprt *ImageSprite) Corner() (float64, float64) {
 }
 
 func (sprt *ImageSprite) Size() (float64, float64) {
-	return sprt.Width, sprt.Height
+	return sprt.width, sprt.height
 }
 
 func (sprt *ImageSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions) {
-	if sprt.Hidden || sprt.Image == nil {
+	if sprt.Hidden {
 		return
 	}
 
@@ -60,25 +70,6 @@ func (sprt *ImageSprite) Delete() {
 	sprt.deleted = true
 }
 
-func NewImageSprite(x, y float64, img *ebiten.Image) ImageSprite {
-	w, h := img.Size()
-
-	return ImageSprite{
-		X:      x,
-		Y:      y,
-		Width:  float64(w),
-		Height: float64(h),
-		Image:  img,
-	}
-}
-
-func NewImageFill(w, h int, clr color.Color) *ebiten.Image {
-	img := ebiten.NewImage(w, h)
-	img.Fill(clr)
-
-	return img
-}
-
 type TextSprite struct {
 	Hidden        bool
 	X, Y          float64
@@ -87,6 +78,10 @@ type TextSprite struct {
 	Face          font.Face
 	Color         color.Color
 	deleted       bool
+}
+
+func (sprt *TextSprite) Init(mode Mode) {
+	// Nothing
 }
 
 func (sprt *TextSprite) Update(mode Mode) bool {
@@ -135,25 +130,27 @@ type RectSprite struct {
 	X, Y          float64
 	Width, Height float64
 	Color         color.RGBA
-	w, h          float64
+	width, height float64
 	clr           color.RGBA
 	img           *ebiten.Image
 	deleted       bool
 }
 
-func (sprt *RectSprite) Update(mode Mode) bool {
-	if sprt.w != sprt.Width || sprt.h != sprt.Height || sprt.clr != sprt.Color {
-		sprt.w = sprt.Width
-		sprt.h = sprt.Height
+func (sprt *RectSprite) Init(mode Mode) {
+	if sprt.width != sprt.Width || sprt.height != sprt.Height || sprt.clr != sprt.Color {
+		sprt.width = sprt.Width
+		sprt.height = sprt.Height
 		sprt.clr = sprt.Color
-		if sprt.w > 0 && sprt.h > 0 {
-			sprt.img = ebiten.NewImage(int(sprt.w), int(sprt.h))
+		if sprt.width > 0 && sprt.height > 0 {
+			sprt.img = ebiten.NewImage(int(sprt.width), int(sprt.height))
 			sprt.img.Fill(sprt.clr)
 		} else {
 			sprt.img = nil
 		}
 	}
+}
 
+func (sprt *RectSprite) Update(mode Mode) bool {
 	return false
 }
 
@@ -170,14 +167,13 @@ func (sprt *RectSprite) Corner() (float64, float64) {
 }
 
 func (sprt *RectSprite) Size() (float64, float64) {
-	return sprt.Width, sprt.Height
+	return sprt.width, sprt.height
 }
 
 func (sprt *RectSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions) {
 	if sprt.Hidden || sprt.img == nil {
 		return
 	}
-	sprt.Update(mode)
 
 	op.GeoM.Translate(sprt.X, sprt.Y)
 	screen.DrawImage(sprt.img, op)

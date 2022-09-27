@@ -29,21 +29,21 @@ func TestCollide(t *testing.T) {
 func gotSprites(sprites []engine.Sprite) []int {
 	var got []int
 	for _, sprite := range sprites {
-		got = append(got, int(sprite.(*engine.ImageSprite).X))
+		got = append(got, int(sprite.(*engine.RectSprite).X))
 	}
 	return got
 }
 
 func TestDelete(t *testing.T) {
 	sprites := []engine.Sprite{
-		&engine.ImageSprite{X: 0},
-		&engine.ImageSprite{X: 1},
-		&engine.ImageSprite{X: 2},
-		&engine.ImageSprite{X: 3},
-		&engine.ImageSprite{X: 4},
-		&engine.ImageSprite{X: 5},
-		&engine.ImageSprite{X: 6},
-		&engine.ImageSprite{X: 7},
+		&engine.RectSprite{X: 0},
+		&engine.RectSprite{X: 1},
+		&engine.RectSprite{X: 2},
+		&engine.RectSprite{X: 3},
+		&engine.RectSprite{X: 4},
+		&engine.RectSprite{X: 5},
+		&engine.RectSprite{X: 6},
+		&engine.RectSprite{X: 7},
 	}
 
 	level := engine.Level{
@@ -60,7 +60,7 @@ func TestDelete(t *testing.T) {
 		t.Errorf("Sprites: got %v want %v", got, want)
 	}
 
-	sprites[3].(*engine.ImageSprite).Delete()
+	sprites[3].(*engine.RectSprite).Delete()
 	level.Draw(0, nil)
 	got = gotSprites(level.Layers[0].Sprites)
 	want = []int{0, 1, 2, 4, 5, 6, 7}
@@ -68,7 +68,7 @@ func TestDelete(t *testing.T) {
 		t.Errorf("Delete(3): got %v want %v", got, want)
 	}
 
-	sprites[7].(*engine.ImageSprite).Delete()
+	sprites[7].(*engine.RectSprite).Delete()
 	level.Draw(0, nil)
 	got = gotSprites(level.Layers[0].Sprites)
 	want = []int{0, 1, 2, 4, 5, 6}
@@ -76,7 +76,7 @@ func TestDelete(t *testing.T) {
 		t.Errorf("Delete(7): got %v want %v", got, want)
 	}
 
-	sprites[0].(*engine.ImageSprite).Delete()
+	sprites[0].(*engine.RectSprite).Delete()
 	level.Draw(0, nil)
 	got = gotSprites(level.Layers[0].Sprites)
 	want = []int{1, 2, 4, 5, 6}
@@ -84,7 +84,7 @@ func TestDelete(t *testing.T) {
 		t.Errorf("Delete(0): got %v want %v", got, want)
 	}
 
-	level.Layers[0].Sprites = append(level.Layers[0].Sprites, &engine.ImageSprite{X: 8})
+	level.Layers[0].Sprites = append(level.Layers[0].Sprites, &engine.RectSprite{X: 8})
 	level.Draw(0, nil)
 	got = gotSprites(level.Layers[0].Sprites)
 	want = []int{1, 2, 4, 5, 6, 8}
@@ -92,7 +92,7 @@ func TestDelete(t *testing.T) {
 		t.Errorf("Add(8): got %v want %v", got, want)
 	}
 
-	sprites[4].(*engine.ImageSprite).Delete()
+	sprites[4].(*engine.RectSprite).Delete()
 	level.Draw(0, nil)
 	got = gotSprites(level.Layers[0].Sprites)
 	want = []int{1, 2, 5, 6, 8}

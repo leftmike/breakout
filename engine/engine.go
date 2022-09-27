@@ -20,6 +20,7 @@ type Layer struct {
 type Mode int
 
 type Sprite interface {
+	Init(mode Mode)
 	Update(mode Mode) bool
 	Visible() bool
 	Collision(with Sprite)
@@ -42,6 +43,14 @@ func (lvl *Level) Draw(mode Mode, screen *ebiten.Image) {
 }
 
 func (lyr *Layer) update(mode Mode) {
+	for _, sprt := range lyr.Sprites {
+		if sprt.Deleted() {
+			continue
+		}
+
+		sprt.Init(mode)
+	}
+
 	if lyr.Active != nil && (int(mode) >= len(lyr.Active) || !lyr.Active[mode]) {
 		return
 	}
