@@ -101,13 +101,16 @@ var (
 				Visible: []bool{pauseMode: true},
 				Active:  []bool{pauseMode: true},
 				Sprites: []engine.Sprite{
-					&engine.TextSprite{
-						Text:       "Paused\npress C to continue",
-						Align:      engine.AlignCenter,
-						Face:       face,
-						Color:      color.RGBA{0, 0, 0, 0xFF},
-						Margin:     5,
-						Background: color.RGBA{0, 0, 0, 0x20},
+					&TextSprite{
+						TextSprite: engine.TextSprite{
+							Text:       "Paused\npress C to continue",
+							Align:      engine.AlignCenter,
+							Face:       face,
+							Color:      color.RGBA{0, 0, 0, 0xFF},
+							Margin:     10,
+							Background: color.RGBA{0xFF, 0xFF, 0xFF, 0xFF},
+						},
+						Centered: true,
 					},
 				},
 			},
@@ -247,6 +250,22 @@ func (sprt *BlockSprite) collision(ball *BallSprite) {
 	}
 
 	sprt.Delete()
+}
+
+type TextSprite struct {
+	engine.TextSprite
+	Centered bool
+}
+
+func (sprt *TextSprite) Update(mode engine.Mode) bool {
+	sprt.TextSprite.Update(mode)
+	if sprt.Centered {
+		w, h := sprt.TextSprite.Size()
+		sprt.X = (screenWidth - w) / 2
+		sprt.Y = (screenHeight - h) / 2
+	}
+
+	return false
 }
 
 type breakout struct{}

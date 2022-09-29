@@ -80,23 +80,25 @@ const (
 )
 
 type TextSprite struct {
-	Hidden     bool
-	X, Y       float64
-	Text       string
-	Align      Align
-	Face       font.Face
-	Color      color.Color
-	Background color.Color
-	Margin     float64
-	text       string
-	lines      []string
-	widths     []int
-	maxWidth   int
-	lineHeight int
-	background color.Color
-	margin     float64
-	img        *ebiten.Image
-	deleted    bool
+	Hidden      bool
+	X, Y        float64
+	Text        string
+	Align       Align
+	Face        font.Face
+	Color       color.Color
+	Background  color.Color
+	Margin      float64
+	text        string
+	lines       []string
+	widths      []int
+	maxWidth    int
+	faceHeight  int
+	faceAscent  int
+	faceDescent int
+	background  color.Color
+	margin      float64
+	img         *ebiten.Image
+	deleted     bool
 }
 
 func (sprt *TextSprite) Init(mode Mode) {
@@ -117,7 +119,9 @@ func (sprt *TextSprite) Init(mode Mode) {
 			}
 		}
 		metrics := sprt.Face.Metrics()
-		sprt.lineHeight = metrics.Height.Ceil()
+		sprt.faceHeight = metrics.Height.Ceil()
+		sprt.faceAscent = metrics.Ascent.Ceil()
+		sprt.faceDescent = metrics.Descent.Ceil()
 
 		if sprt.background == nil {
 			sprt.img = nil
@@ -146,8 +150,11 @@ func (sprt *TextSprite) Corner() (float64, float64) {
 }
 
 func (sprt *TextSprite) Size() (float64, float64) {
-	return float64(sprt.maxWidth) + sprt.margin*2,
-		float64(sprt.lineHeight*len(sprt.lines)) + sprt.margin*2
+	var h int
+	if len(sprt.lines) > 0 {
+		h = sprt.faceHeight*(len(sprt.lines)-1) + sprt.faceAscent + sprt.faceDescent
+	}
+	return float64(sprt.maxWidth) + sprt.margin*2, float64(h) + sprt.margin*2
 }
 
 func (sprt *TextSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawImageOptions) {
@@ -162,19 +169,21 @@ func (sprt *TextSprite) Draw(mode Mode, screen *ebiten.Image, op *ebiten.DrawIma
 
 	op.GeoM.Translate(sprt.margin, sprt.margin)
 	op.ColorM.ScaleWithColor(sprt.Color)
+
+	h := sprt.faceAscent
 	for cnt, line := range sprt.lines {
 		nop := *op
 		switch sprt.Align {
 		case AlignLeft:
-			nop.GeoM.Translate(0, float64((cnt+1)*sprt.lineHeight))
+			nop.GeoM.Translate(0, float64(h))
 		case AlignCenter:
-			nop.GeoM.Translate(float64(sprt.maxWidth-sprt.widths[cnt])/2,
-				float64((cnt+1)*sprt.lineHeight))
+			nop.GeoM.Translate(float64(sprt.maxWidth-sprt.widths[cnt])/2, float64(h))
 		case AlignRight:
-			nop.GeoM.Translate(float64(sprt.maxWidth-sprt.widths[cnt]),
-				float64((cnt+1)*sprt.lineHeight))
+			nop.GeoM.Translate(float64(sprt.maxWidth-sprt.widths[cnt]), float64(h))
 		}
 		text.DrawWithOptions(screen, line, sprt.Face, &nop)
+
+		h += sprt.faceHeight
 	}
 }
 
