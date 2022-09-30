@@ -199,9 +199,9 @@ type RectSprite struct {
 	Hidden        bool
 	X, Y          float64
 	Width, Height float64
-	Color         color.RGBA
+	Color         color.Color
 	width, height float64
-	clr           color.RGBA
+	clr           color.Color
 	img           *ebiten.Image
 	deleted       bool
 }
@@ -211,7 +211,7 @@ func (sprt *RectSprite) Init(mode Mode) {
 		sprt.width = sprt.Width
 		sprt.height = sprt.Height
 		sprt.clr = sprt.Color
-		if sprt.width > 0 && sprt.height > 0 {
+		if sprt.width > 0 && sprt.height > 0 && sprt.clr != nil {
 			sprt.img = ebiten.NewImage(int(sprt.width), int(sprt.height))
 			sprt.img.Fill(sprt.clr)
 		} else {

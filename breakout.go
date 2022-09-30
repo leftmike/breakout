@@ -69,20 +69,20 @@ var (
 		Sprites: []engine.Sprite{
 			&paddle,
 			&engine.RectSprite{ // left
-				X: -1, Y: 0,
-				Width: 0, Height: screenHeight,
+				X: math.MinInt32, Y: 0,
+				Width: -(math.MinInt32 + 1), Height: screenHeight,
 			},
 			&engine.RectSprite{ // right
 				X: screenWidth, Y: 0,
-				Width: 0, Height: screenHeight,
+				Width: math.MaxInt32 - screenWidth, Height: screenHeight,
 			},
 			&engine.RectSprite{ // top
-				X: 0, Y: -1,
-				Width: screenWidth, Height: 0,
+				X: 0, Y: math.MinInt32,
+				Width: screenWidth, Height: -(math.MinInt32 + 1),
 			},
 			&engine.RectSprite{ // bottom
 				X: 0, Y: screenHeight,
-				Width: screenWidth, Height: 0,
+				Width: screenWidth, Height: math.MaxInt32 - screenHeight,
 			},
 		},
 	}
@@ -138,6 +138,9 @@ func (sprt *PaddleSprite) Update(mode engine.Mode) bool {
 
 		gameLayer.Sprites = append(gameLayer.Sprites, &ball)
 	}
+
+	cursorX, _ := ebiten.CursorPosition()
+	sprt.X = float64(cursorX - paddleWidth/2)
 
 	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
 		sprt.DX -= paddleAccel
@@ -371,6 +374,7 @@ func main() {
 	ebiten.SetWindowSize(windowWidth, windowHeight)
 	ebiten.SetWindowTitle("Breakout")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+	ebiten.SetCursorMode(ebiten.CursorModeHidden) // XXX: Show it in menu mode?
 
 	err := ebiten.RunGame(&breakout{})
 	if err != nil && !errors.Is(err, errQuit) {
