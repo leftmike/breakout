@@ -165,7 +165,18 @@ func (sprt *PaddleSprite) Update(mode engine.Mode) bool {
 func (sprt *PaddleSprite) Collision(with engine.Sprite) {
 	if ball, ok := with.(*BallSprite); ok {
 		if ball.DY > 0 {
-			ball.setDXDY(ball.DX + sprt.DX)
+			//ball.setDXDY(ball.DX + sprt.DX)
+
+			sprtW, _ := sprt.Size()
+			sprtX, _ := sprt.Corner()
+			sprtX += sprtW / 2
+
+			ballW, _ := ball.Size()
+			ballX, _ := ball.Corner()
+			ballX += ballW / 2
+
+			angle := math.Min(math.Max((sprtX-ballX)*math.Pi/sprtW, -math.Pi/3), math.Pi/3)
+			ball.setDXDY(math.Sin(-angle) * ball.speed)
 		}
 	} else if sprt.X < 0 {
 		sprt.X = 0
@@ -208,6 +219,21 @@ func (sprt *BallSprite) setDXDY(dx float64) {
 	}
 	sprt.DX = dx
 	sprt.DY = -dy
+}
+
+func (sprt *BallSprite) Update(mode engine.Mode) bool {
+	if sprt.DX == 0 && sprt.DY == 0 {
+		return false
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyS) {
+		sprt.X += sprt.DX / 4
+		sprt.Y += sprt.DY / 4
+	} else {
+		sprt.X += sprt.DX
+		sprt.Y += sprt.DY
+	}
+	return true
 }
 
 func (sprt *BallSprite) Collision(with engine.Sprite) {
